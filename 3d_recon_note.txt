@@ -1,0 +1,17 @@
+#####begin from ycy2#####
+mkdir -p experiments/my_own_scene
+cd experiments/my_own_scene
+python ../../realsense_capture.py # get rgb and depth # start from final camera viewer
+cd ../../
+python /home/zxr/Documents/ycy/ros_ws/src/ultralytics_ros/script/instant-ngp2/scripts/ycy_colmap2nerf.py --source_path experiments/my_own_scene --run_colmap # if fail , delete --aabb_scale no need whole recon , only need transforms.json
+python scripts/splatam.py config/iphone/splatam.py
+realsense_viewer
+#change color_image_size
+#take a photo save to experiments/my_own_scene
+python new_run.py config/iphone/splatam.py --query_path /path/to/photo
+#copy results to mmpose_recon.py
+python viz_scripts/mmpose_recon.py configs/iphone/splatam.py viz_scripts/configs/rtmw3d-l_8xb64_cocktail14-384x288.py rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_202406.pth
+
+python viz_scripts/3d_recon.py configs/iphone/splatam.py viz_scripts/configs/rtmw3d-l_8xb64_cocktail14-384x288.py rtmw3d-l_8xb64_cocktail14-384x288-794dbc78_202406.pth
+
+

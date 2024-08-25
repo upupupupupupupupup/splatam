@@ -132,8 +132,8 @@ def render(w2c, k, timestep_data, timestep_depth_data, cfg):
             campos=cam.campos,
             prefiltered=cam.prefiltered
         )
-        im, _, depth, = Renderer(raster_settings=white_bg_cam)(**timestep_data)
-        depth_sil, _, _, = Renderer(raster_settings=cam)(**timestep_depth_data)
+        im, _, depth, _, _,= Renderer(raster_settings=white_bg_cam)(**timestep_data)
+        depth_sil, _, _, _, _,= Renderer(raster_settings=cam)(**timestep_depth_data)
         differentiable_depth = depth_sil[0, :, :].unsqueeze(0)
         sil = depth_sil[1, :, :].unsqueeze(0)
         return im, depth, sil

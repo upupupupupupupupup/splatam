@@ -2,17 +2,17 @@ from os.path import join as p_join
 
 primary_device = "cuda:0"
 
-base_dir = "./experiments/iPhone_Captures"
-scene_name = "splatam_demo"
-params_path = f"{base_dir}/{scene_name}/params.npz"
+base_dir = "./experiments/orbbec_Captures" # Root Directory to Save iPhone Dataset
+scene_name = "sushe" #"offline_demo" # Scan Name
+params_path = f"{base_dir}/{scene_name}/5000_result/params.npz"
 
-group_name = "iPhone_Captures"
+group_name = "sushe_Captures"
 run_name = f"{scene_name}_post_splatam_opt"
 
-full_res_width = 1920
-full_res_height = 1440
-downscale_factor = 2.0
-densify_downscale_factor = 4.0
+full_res_width = 640 #1920
+full_res_height = 480 #1440
+downscale_factor = 1.0
+densify_downscale_factor = 1.0
 
 config = dict(
     workdir=f"./experiments/{group_name}",

@@ -206,11 +206,11 @@ def get_loss_gs(params, curr_data, variables, loss_weights):
 
     # RGB Rendering
     rendervar['means2D'].retain_grad()
-    im, radius, _, = Renderer(raster_settings=curr_data['cam'])(**rendervar)
+    im, radius, _, n_touched_rgb, _= Renderer(raster_settings=curr_data['cam'])(**rendervar)
     variables['means2D'] = rendervar['means2D']  # Gradient only accum from colour render for densification
 
     # Depth & Silhouette Rendering
-    depth_sil, _, _, = Renderer(raster_settings=curr_data['cam'])(**depth_sil_rendervar)
+    depth_sil, _, _, n_touched_depth, _= Renderer(raster_settings=curr_data['cam'])(**depth_sil_rendervar)
     depth = depth_sil[0, :, :].unsqueeze(0)
     silhouette = depth_sil[1, :, :]
 
@@ -268,7 +268,7 @@ def add_new_gaussians(params, variables, curr_data, sil_thres,
     transformed_gaussians = transform_to_frame(params, time_idx, gaussians_grad=False, camera_grad=False)
     depth_sil_rendervar = transformed_params2depthplussilhouette(params, curr_data['w2c'],
                                                                  transformed_gaussians)
-    depth_sil, _, _, = Renderer(raster_settings=curr_data['cam'])(**depth_sil_rendervar)
+    depth_sil, _, _, n_touched, _ = Renderer(raster_settings=curr_data['cam'])(**depth_sil_rendervar)
     silhouette = depth_sil[1, :, :]
     non_presence_sil_mask = (silhouette < sil_thres)
     # Check for new foreground objects by using GT depth

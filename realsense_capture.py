@@ -6,20 +6,34 @@
 #####################################################
 
 import os
-# First import the library
-import pyrealsense2 as rs
-# Import Numpy for easy array manipulation
-import numpy as np
+
 # Import OpenCV for easy image rendering
 import cv2
+import mediapipe as mp
+
+# Import Numpy for easy array manipulation
+import numpy as np
+
+# First import the library
+import pyrealsense2 as rs
+
+MIN_DEPTH = 300  # 20mm
+MAX_DEPTH = 10000  # 10000mm
+Capture_Num = 150
+
+mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_pose = mp.solutions.pose
+
 
 def save_depth_frame(img, timestamp):
     save_image_dir = os.path.join(os.getcwd(), "depth")
     if not os.path.exists(save_image_dir):
         os.mkdir(save_image_dir)
     raw_filename = save_image_dir + "/{}.png".format(timestamp)
-    #data.tofile(raw_filename)
+    # data.tofile(raw_filename)
     cv2.imwrite(raw_filename, img, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+
 
 def save_color_frame(img, timestamp):
     save_image_dir = os.path.join(os.getcwd(), "rgb")
@@ -30,6 +44,7 @@ def save_color_frame(img, timestamp):
         print("failed to convert frame to image")
         return
     cv2.imwrite(filename, img, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+
 
 def main():
     # Create a pipeline
@@ -47,23 +62,28 @@ def main():
 
     found_rgb = False
     for s in device.sensors:
-        if s.get_info(rs.camera_info.name) == 'RGB Camera':
+        if s.get_info(rs.camera_info.name) == "RGB Camera":
             found_rgb = True
             break
     if not found_rgb:
         print("The demo requires Depth camera with Color sensor")
         exit(0)
 
+    config.enable_device("234222304656")
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
     config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
     # Start streaming
     profile = pipeline.start(config)
 
+    # 【Skip 5 first frames to give the Auto-Exposure time to adjust 跳过前5帧以设置自动曝光时间】
+    for i in range(10):
+        pipeline.wait_for_frames()
+
     # Getting the depth sensor's depth scale (see rs-align example for explanation)
     depth_sensor = profile.get_device().first_depth_sensor()
     depth_scale = depth_sensor.get_depth_scale()
-    print("Depth Scale is: " , depth_scale)
+    print("Depth Scale is: ", depth_scale)
 
     profile_d = profile.get_stream(rs.stream.depth)
     profile_c = profile.get_stream(rs.stream.color)
@@ -74,7 +94,7 @@ def main():
 
     # We will be removing the background of objects more than
     #  clipping_distance_in_meters meters away
-    clipping_distance_in_meters = 1 #1 meter
+    clipping_distance_in_meters = 1  # 1 meter
     clipping_distance = clipping_distance_in_meters / depth_scale
 
     # Create an align object
@@ -84,11 +104,18 @@ def main():
     align = rs.align(align_to)
 
     saved_cnt: int = 0
-    num: int = 1
+    num: int = 0
+
+    temporal = rs.temporal_filter()
+
+    # pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5)
 
     # Streaming loop
     try:
-        while True:
+        while saved_cnt < Capture_Num:
+
+            num += 1
+
             # Get frameset of color and depth
             frames = pipeline.wait_for_frames()
             # frames.get_depth_frame() is a 640x360 depth image
@@ -97,48 +124,66 @@ def main():
             aligned_frames = align.process(frames)
 
             # Get aligned frames
-            aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+            aligned_depth_frame = (
+                aligned_frames.get_depth_frame()
+            )  # aligned_depth_frame is a 640x480 depth image
             color_frame = aligned_frames.get_color_frame()
 
             # Validate that both frames are valid
             if not aligned_depth_frame or not color_frame:
                 continue
 
+            aligned_depth_frame = temporal.process(aligned_depth_frame)
+
             depth_image = np.asanyarray(aligned_depth_frame.get_data())
             color_image = np.asanyarray(color_frame.get_data())
 
-            timestamp = "%.3f" % (aligned_depth_frame.get_timestamp() / 1000)
+            depth_image = np.where(
+                (depth_image > MIN_DEPTH) & (depth_image < MAX_DEPTH), depth_image, 0
+            )
 
-            if saved_cnt < 50:
-                if num % 6 == 0:
-                    save_depth_frame(depth_image, timestamp)
-                    save_color_frame(color_image, timestamp)
-                    saved_cnt += 1
-            else:
-                print("\nget_all_image")
-                break
-            num += 1
+            # timestamp = "%.3f" % (aligned_depth_frame.get_timestamp() / 1000)
 
-            # Remove background - Set pixels further than clipping_distance to grey
-            grey_color = 153
-            depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-            bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
+            if num % 10 == 0:
+                save_depth_frame(depth_image, saved_cnt)
+                save_color_frame(color_image, saved_cnt)
+                saved_cnt += 1
 
-            # Render images:
-            #   depth align to color on left
-            #   depth on right
-            depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-            images = np.hstack((bg_removed, depth_colormap))
+            # # Remove background - Set pixels further than clipping_distance to grey
+            # grey_color = 153
+            # depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
+            # bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
+            #
+            # # Render images:
+            # #   depth align to color on left
+            # #   depth on right
+            # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
+            # images = np.hstack((bg_removed, depth_colormap))
+            #
+            # cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
+            # cv2.imshow('Align Example', images)
 
-            cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
-            cv2.imshow('Align Example', images)
+            # Draw the pose annotation on the image.
+
+            # results = pose.process(color_image)
+            # mp_drawing.draw_landmarks(
+            #     color_image,
+            #     results.pose_landmarks,
+            #     mp_pose.POSE_CONNECTIONS,
+            #     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style(),
+            # )
+            # Flip the image horizontally for a selfie-view display.
+            cv2.imshow("MediaPipe Pose", cv2.flip(color_image, 1))
+
             key = cv2.waitKey(1)
             # Press esc or 'q' to close the image window
-            if key & 0xFF == ord('q') or key == 27:
+            if key & 0xFF == ord("q") or key == 27:
                 cv2.destroyAllWindows()
                 break
     finally:
+        print("\nget_all_image")
         pipeline.stop()
+
 
 if __name__ == "__main__":
     main()

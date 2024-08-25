@@ -23,8 +23,8 @@ class NeRFCaptureDataset(GradSLAMDataset):
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
-        desired_height: Optional[int] = 1440,
-        desired_width: Optional[int] = 1920,
+        desired_height: Optional[int] = 480,  # 1440,
+        desired_width: Optional[int] = 640,  # 1920,
         load_embeddings: Optional[bool] = False,
         embedding_dir: Optional[str] = "embeddings",
         embedding_dim: Optional[int] = 512,
@@ -34,19 +34,27 @@ class NeRFCaptureDataset(GradSLAMDataset):
         config_dict = {}
         config_dict["dataset_name"] = "nerfcapture"
         self.pose_path = None
-        
+
         # Load NeRFStudio format camera & poses data
         self.cams_metadata = self.load_cams_metadata()
         self.frames_metadata = self.cams_metadata["frames"]
-        self.filepath_index_mapping = create_filepath_index_mapping(self.frames_metadata)
+        self.filepath_index_mapping = create_filepath_index_mapping(
+            self.frames_metadata
+        )
 
         # Load RGB & Depth filepaths
-        self.image_names = natsorted(os.listdir(f"{self.input_folder}/rgb"))
-        self.image_names = [f'rgb/{image_name}' for image_name in self.image_names]
+        self.image_names = natsorted(
+            os.listdir(f"{self.input_folder}/rgb")
+        )  # natsorted(os.listdir(f"{self.input_folder}/rgb"))
+        self.image_names = [
+            f"./{self.input_folder}/rgb/{image_name}" for image_name in self.image_names
+        ]  # [f'rgb/{image_name}' for image_name in self.image_names] #加入了base和seq
 
         # Init Intrinsics
         config_dict["camera_params"] = {}
-        config_dict["camera_params"]["png_depth_scale"] = 6553.5 # Depth is in mm
+        config_dict["camera_params"][
+            "png_depth_scale"
+        ] = 1000.0  # 6553.5 # Depth is in mm
         config_dict["camera_params"]["image_height"] = self.cams_metadata["h"]
         config_dict["camera_params"]["image_width"] = self.cams_metadata["w"]
         config_dict["camera_params"]["fx"] = self.cams_metadata["fl_x"]
@@ -65,32 +73,36 @@ class NeRFCaptureDataset(GradSLAMDataset):
             embedding_dir=embedding_dir,
             embedding_dim=embedding_dim,
             **kwargs,
-        ) 
+        )
 
     def load_cams_metadata(self):
         cams_metadata_path = f"{self.input_folder}/transforms.json"
         cams_metadata = json.load(open(cams_metadata_path, "r"))
         return cams_metadata
-    
+
     def get_filepaths(self):
         base_path = f"{self.input_folder}"
         color_paths = []
         depth_paths = []
         self.tmp_poses = []
         P = torch.tensor(
-            [
-                [1, 0, 0, 0],
-                [0, -1, 0, 0],
-                [0, 0, -1, 0],
-                [0, 0, 0, 1]
-            ]
+            [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]]
         ).float()
         for image_name in self.image_names:
             # Search for image name in frames_metadata
-            frame_metadata = self.frames_metadata[self.filepath_index_mapping.get(image_name)]
+            print("image_name", image_name)
+            # print("filepath_index_mapping", self.filepath_index_mapping)
+            print(self.filepath_index_mapping.get(image_name))
+            # if self.filepath_index_mapping.get(image_name) == None:
+            #    continue
+            frame_metadata = self.frames_metadata[
+                self.filepath_index_mapping.get(image_name)
+            ]
             # Get path of image and depth
-            color_path = f"{base_path}/{image_name}"
-            depth_path = f"{base_path}/{image_name.replace('rgb', 'depth')}"
+            # color_path = f"{base_path}/{image_name}"
+            color_path = f"{image_name}"
+            # depth_path = f"{base_path}/{image_name.replace('rgb', 'depth')}" #f"{base_path}/{image_name.replace('rgb', 'depth')}"
+            depth_path = f"{image_name.replace('rgb', 'depth')}"  # f"{base_path}/{image_name.replace('rgb', 'depth')}"
             color_paths.append(color_path)
             depth_paths.append(depth_path)
             # Get pose of image in GradSLAM format
@@ -99,7 +111,9 @@ class NeRFCaptureDataset(GradSLAMDataset):
             self.tmp_poses.append(_pose)
         embedding_paths = None
         if self.load_embeddings:
-            embedding_paths = natsorted(glob.glob(f"{base_path}/{self.embedding_dir}/*.pt"))
+            embedding_paths = natsorted(
+                glob.glob(f"{base_path}/{self.embedding_dir}/*.pt")
+            )
         return color_paths, depth_paths, embedding_paths
 
     def load_poses(self):

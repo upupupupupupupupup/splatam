@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/zxr/Documents/ycy/ros_ws/devel/include/**",
+        "/opt/ros/noetic/include/**",
+        "/home/zxr/Documents/ycy/ros_ws/src/audition/include/**",
+        "/home/zxr/Documents/ycy/ros_ws/src/realsense-ros/realsense2_camera/include/**",
+        "/home/zxr/Documents/ycy/ros_ws/src/ultralytics_ros/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

@@ -3,20 +3,20 @@ from os.path import join as p_join
 
 scenes = ["room0", "room1", "room2",
           "office0", "office1", "office2",
-          "office_", "office4"]
+          "office3", "office4"]
 
 primary_device="cuda:0"
 seed = 0
 scene_name = scenes[0]
 
 map_every = 1
-keyframe_every = 5
-mapping_window_size = 24
-tracking_iters = 40
-mapping_iters = 60
+keyframe_every = 5 #5
+mapping_window_size = 32#24
+tracking_iters = 10 #40
+mapping_iters = 15 #60
 
-group_name = "Replica"
-run_name = f"{scene_name}_{seed}"
+group_name = "bishe/Replica"
+run_name = f"origin_{scene_name}_{seed}"
 
 config = dict(
     workdir=f"./experiments/{group_name}",
@@ -36,7 +36,10 @@ config = dict(
     checkpoint_time_idx=0,
     save_checkpoints=False, # Save Checkpoints
     checkpoint_interval=100, # Checkpoint Interval
-    use_wandb=True,
+    kf_translation=0.04,
+    kf_min_translation=0.02,
+    kf_overlap=0.95,
+    use_wandb=False,
     wandb=dict(
         entity="theairlab",
         project="SplaTAM",
@@ -102,8 +105,8 @@ config = dict(
         pruning_dict=dict( # Needs to be updated based on the number of mapping iterations
             start_after=0,
             remove_big_after=0,
-            stop_after=20,
-            prune_every=20,
+            stop_after=15, #20
+            prune_every=15,
             removal_opacity_threshold=0.005,
             final_removal_opacity_threshold=0.005,
             reset_opacities=False,
@@ -111,10 +114,10 @@ config = dict(
         ),
         use_gaussian_splatting_densification=False, # Use Gaussian Splatting-based Densification during Mapping
         densify_dict=dict( # Needs to be updated based on the number of mapping iterations
-            start_after=500,
-            remove_big_after=3000,
-            stop_after=5000,
-            densify_every=100,
+            start_after=5,#500,
+            remove_big_after=30,#3000,
+            stop_after=50,#5000,
+            densify_every=10,#100,
             grad_thresh=0.0002,
             num_to_split_into=2,
             removal_opacity_threshold=0.005,

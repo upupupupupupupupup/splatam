@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/KinectPy" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/Map_ORBSLAM_ROS" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/diff-gaussian-rasterization-w-depth" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/mmpose" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/old_mmpose" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/viz_scripts" vcs="Git" />
+  </component>
+</project>
