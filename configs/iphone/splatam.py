@@ -298,11 +298,11 @@ config = dict(
         offset_first_viz_cam=False,  # Offsets the view camera back by 0.5 units along the view direction (For Final Recon Viz)
         show_sil=False,  # Show Silhouette instead of RGB
         visualize_cams=False,  # Visualize Camera Frustums and Trajectory
-        viz_w=600,#600
-        viz_h=440,#340
+        viz_w=600,  # 600
+        viz_h=440,  # 340
         viz_near=0.01,
         viz_far=100.0,
-        view_scale=1,
+        view_scale=2,
         viz_fps=5,  # FPS for Online Recon Viz
         enter_interactive_post_online=False,  # Enter Interactive Mode after Online Recon Viz
     ),
